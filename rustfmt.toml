@@ -1,0 +1,4 @@
+# NOTE: Wrapping comments required the nightly toolchain
+# A saddening amount of rustfmt features are locked on nightly
+# despite being more or less stable.
+wrap_comments = true
