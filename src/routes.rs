@@ -4,7 +4,7 @@ use salvo::http::header::{HeaderName, HeaderValue};
 
 use salvo::http::request::secure_max_size;
 use salvo::prelude::*;
-use serde_json::from_str;
+
 
 use crate::util::{join_bare_headers, split_headers, ProcessedHeaders, REQWEST_CLIENT};
 use crate::version::VersionData;
@@ -20,7 +20,7 @@ async fn versions(res: &mut Response) {
 }
 
 #[handler]
-// A function to preprocess headers from a request and inject them to the depot
+/// A function to preprocess headers from a request and inject them to the depot
 async fn preprocess_headers(req: &mut Request, depot: &mut Depot) {
     // Get a mutable reference to the headers from the request
     let headers: &mut HeaderMap = req.headers_mut();
@@ -85,6 +85,7 @@ async fn preprocess_headers(req: &mut Request, depot: &mut Depot) {
 }
 
 #[handler]
+/// Handler for [`TOMPHttp V2`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md#send-and-receive-data-from-a-remote) requests.
 async fn v2_get(req: &mut Request, res: &mut Response, depot: &mut Depot) {
     // Get a mutable reference to the processed headers from the depot
     let headers: &mut ProcessedHeaders = depot
@@ -156,8 +157,9 @@ async fn v2_get(req: &mut Request, res: &mut Response, depot: &mut Depot) {
         .expect("This should not fail?");
 }
 
-// Blanket fix for CORS headers while in dev.
-// THIS IS BAD AND A SEC VULN, WILL BE FIXED LATER.
+/// Blanket fix for CORS headers while in dev.
+///
+/// THIS IS BAD AND A SEC VULN, WILL BE FIXED LATER.
 fn add_cors_headers(res: &mut Response) {
     res.add_header("access-control-allow-origin", "*", true)
         .unwrap();
@@ -169,6 +171,7 @@ fn add_cors_headers(res: &mut Response) {
         .unwrap();
 }
 
+/// Build our routes.
 pub fn built_routes() -> Router {
     Router::new().get(versions).push(
         Router::with_path("v2")
