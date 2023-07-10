@@ -69,16 +69,23 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
         .unwrap()
         .explode_ref_mut();
 
-    let url = req.header::<String>("x-bare-url").unwrap_or(format!(
-        "{}//{}{}",
-        // Assume HTTPS if not specified
-        req.header::<String>("x-bare-protocol")
-            .unwrap_or("https:".to_owned()),
-        req.header::<String>("x-bare-host")
-            .unwrap_or("example.com".to_owned()),
-        req.header::<String>("x-bare-path")
-            .unwrap_or("/".to_owned())
-    ));
+    cfg_if! {
+        if #[cfg(feature = "v2")] {
+            let url = req.header::<String>("x-bare-url").unwrap_or(format!(
+                "{}//{}{}",
+                // Assume HTTPS if not specified
+                req.header::<String>("x-bare-protocol")
+                    .unwrap_or("https:".to_owned()),
+                req.header::<String>("x-bare-host")
+                    .unwrap_or("example.com".to_owned()),
+                req.header::<String>("x-bare-path")
+                    .unwrap_or("/".to_owned())
+            ));
+        } else {
+            let url = req.header::<String>("x-bare-url")
+                .ok_or(ErrorWithContext::new(Error::MissingBareHeader("x-bare-url".into()), "While processing v3 request."))?;
+        }
+    }
 
     let response = REQWEST_CLIENT
         .get()

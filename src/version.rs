@@ -23,9 +23,16 @@ pub struct VersionData {
 // Implement the Default trait for VersionData to provide a default value
 impl Default for VersionData {
     fn default() -> Self {
+        let mut versions = Vec::new();
+        versions.push("v3".into());
+        cfg_if! {
+            if #[cfg(feature = "v2")] {
+                versions.push("v2".into());
+            }
+        }
         Self {
             // Currently the project supports only version 3 of the [`TOMPHTTP`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md) specification
-            versions: vec!["v3".into(), "v2".into()],
+            versions,
             // The project is written in Rust
             language: "Rust".into(),
             // Use the default value for MaintainerData

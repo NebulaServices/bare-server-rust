@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use miette::{Diagnostic, Report as StackReport};
 use reqwest::StatusCode;
 use salvo::{
@@ -102,10 +100,10 @@ impl Error {
             Error::ForbiddenBareHeader(header) => format!("error.temp.forbidden_header.{header}"),
             Error::UnknownBareHeader(header) => format!("error.temp.unknown_bare_header.{header}"),
             Error::InvalidHeader(header) => format!("error.temp.invalid_header.{header}"),
-            Error::HostNotFound => format!("error.http.not_found"),
-            Error::ConnectionReset => format!("error.http.reset"),
-            Error::ConnectionRefused => format!("error.http.refused"),
-            Error::ConnectionTimeout => format!("error.http.timeout"),
+            Error::HostNotFound => "error.http.not_found".to_string(),
+            Error::ConnectionReset => "error.http.reset".to_string(),
+            Error::ConnectionRefused => "error.http.refused".to_string(),
+            Error::ConnectionTimeout => "error.http.timeout".to_string(),
             Error::Generic(kind) => format!("request.tomphttp-rs.{kind}"),
         };
 
