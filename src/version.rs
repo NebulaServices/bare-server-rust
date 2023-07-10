@@ -76,8 +76,9 @@ pub struct ProjectData {
 impl Default for ProjectData {
     fn default() -> Self {
         Self {
-            name: "Nebula TOMPHTTP Server".into(),
-            description: "Clean implementation of the TOMPHttp Specification in Rust.".into(),
+            name: "tomphttp-rs server".into(),
+            description:
+                "Clean implementation of the tomphttp specificiation in the Rust language.".into(),
             email: "".into(),
             website: "https://github.com/NebulaServices/bare-server-rust".into(),
             repository: "https://github.com/NebulaServices/bare-server-rust".into(),

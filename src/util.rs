@@ -8,6 +8,7 @@ use std::{
     ops::{Deref, DerefMut},
     str::{self, FromStr},
 };
+use tracing_subscriber::fmt::format;
 const MAX_HEADER_VALUE: usize = 3072;
 pub static REQWEST_CLIENT: OnceCell<Client> = OnceCell::new();
 #[derive(Default, Clone, Debug)]
@@ -82,35 +83,27 @@ pub fn split_headers(headers: &HeaderMap) -> HeaderMap {
 ///
 /// The original case of the header names is preserved and other headers are not
 /// modified.
-pub fn join_bare_headers(headers: &HeaderMap) -> Result<HeaderValue, String> {
-    let mut err: Option<String> = None;
+pub fn join_bare_headers(headers: &HeaderMap) -> HeaderValue {
+    // Create an early out if `x-bare-headers` exists on its own
+    if let Some(header) = headers.get("x-bare-headers") {
+        return header.to_owned();
+    }
     // Create a new empty string for the joined header value
     let mut joined_value = String::new();
-    // Iterate over each header in the input header map
-    headers.iter().for_each(|(name, value)| {
-        // Check if the header name has the prefix "x-bare-headers-" (case-insensitive)
-        if name.as_str().to_lowercase().starts_with("x-bare-headers-") {
-            if !value
+    // Why couldn't they have used duplicate headers.
+    // It'd be less ugly. Oh well.
+    let mut x = 1;
+    while let Some(header) = headers.get(format!("x-bare-headers-{x}")) {
+        joined_value.push_str(
+            header
                 .to_str()
-                .expect("[Join Headers] Should be convertable to string")
-                .starts_with(';')
-            {
-                err = Some("Header started with invalid character.".into());
-            }
-            // Append the header value to the joined value string
-            joined_value.push_str(
-                value
-                    .to_str()
-                    .expect("[Join Headers] Failed to convert header value to string?"),
-            );
-        }
-    });
-    if let Some(e) = err {
-        return Err(e);
+                .expect("[Join Headers] Failed to convert header value to string?"),
+        );
+        x += 1;
     }
     // Create a new header value from the joined value string
     let joined_value = HeaderValue::from_str(&joined_value)
         .expect("[Join Headers] Failed to create header value?");
     // Return joined values
-    Ok(joined_value)
+    joined_value
 }

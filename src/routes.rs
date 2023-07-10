@@ -3,8 +3,8 @@ use reqwest::header::HeaderMap;
 use salvo::http::header::{HeaderName, HeaderValue};
 
 use salvo::http::request::secure_max_size;
+use salvo::logging::Logger;
 use salvo::prelude::*;
-
 
 use crate::util::{join_bare_headers, split_headers, ProcessedHeaders, REQWEST_CLIENT};
 use crate::version::VersionData;
@@ -52,9 +52,7 @@ async fn preprocess_headers(req: &mut Request, depot: &mut Depot) {
         });
 
     // Get the value of x-bare-headers or use the joined bare headers as default
-    let bare_headers = headers
-        .get("x-bare-headers")
-        .map_or_else(|| join_bare_headers(headers).unwrap(), |h| h.to_owned());
+    let bare_headers = join_bare_headers(headers);
 
     // Process bare headers if they exist
     if !bare_headers.is_empty() {
@@ -173,7 +171,8 @@ fn add_cors_headers(res: &mut Response) {
 
 /// Build our routes.
 pub fn built_routes() -> Router {
-    Router::new().get(versions).push(
+    tracing_subscriber::fmt().init();
+    Router::new().hoop(Logger::new()).get(versions).push(
         Router::with_path("v2")
             .hoop(preprocess_headers)
             .handle(v2_get),
