@@ -98,7 +98,6 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
                 })?
                 .to_vec(),
         )
-        // Send the new request and panic if it fails
         .send()
         .await
         .map_err(|e| {

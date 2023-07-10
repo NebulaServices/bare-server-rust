@@ -1,3 +1,5 @@
+use std::fmt::format;
+
 use miette::{Diagnostic, Report as StackReport};
 use reqwest::StatusCode;
 use salvo::{
@@ -97,14 +99,14 @@ impl Error {
             Error::MissingBareHeader(header) | Error::InvalidBareHeader(header) => {
                 format!("request.headers.{}", header.to_lowercase())
             }
-            Error::ForbiddenBareHeader(_) => todo!(),
-            Error::UnknownBareHeader(_) => todo!(),
-            Error::InvalidHeader(_) => todo!(),
-            Error::HostNotFound => todo!(),
-            Error::ConnectionReset => todo!(),
-            Error::ConnectionRefused => todo!(),
-            Error::ConnectionTimeout => todo!(),
-            Error::Generic(_) => todo!(),
+            Error::ForbiddenBareHeader(header) => format!("error.temp.forbidden_header.{header}"),
+            Error::UnknownBareHeader(header) => format!("error.temp.unknown_bare_header.{header}"),
+            Error::InvalidHeader(header) => format!("error.temp.invalid_header.{header}"),
+            Error::HostNotFound => format!("error.http.not_found"),
+            Error::ConnectionReset => format!("error.http.reset"),
+            Error::ConnectionRefused => format!("error.http.refused"),
+            Error::ConnectionTimeout => format!("error.http.timeout"),
+            Error::Generic(kind) => format!("request.tomphttp-rs.{kind}"),
         };
 
         json!({
