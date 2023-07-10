@@ -33,7 +33,6 @@ async fn main() {
         .set(Client::new())
         .expect("This should never error");
     tracing_subscriber::fmt::init();
-    tracing::info!("We gucchi");
 
     // Compiler will complain.
     #[allow(unused_mut)]
@@ -49,6 +48,7 @@ async fn main() {
         .push(Router::with_path("error").get(error_test));
     cfg_if! {
         if #[cfg(feature = "v2")] {
+            tracing::info!("server configured to run with the `v2` feature enabled.");
             app = app.push(
                 Router::with_path("v2")
                     .hoop(crate::v3::process_headers)
