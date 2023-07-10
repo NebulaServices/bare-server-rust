@@ -24,8 +24,8 @@ pub struct VersionData {
 impl Default for VersionData {
     fn default() -> Self {
         Self {
-            // Currently the project supports only version 2 of the [`TOMPHTTP`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md) specification
-            versions: vec!["v2".into()],
+            // Currently the project supports only version 3 of the [`TOMPHTTP`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md) specification
+            versions: vec!["v3".into(), "v2".into()],
             // The project is written in Rust
             language: "Rust".into(),
             // Use the default value for MaintainerData

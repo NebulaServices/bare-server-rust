@@ -1,13 +1,10 @@
-use std::fmt::Display;
-
 use miette::{Diagnostic, Report as StackReport};
 use reqwest::StatusCode;
 use salvo::{
     async_trait, Depot, Request, Response, Writer,
-    __private::tracing::{self, instrument::WithSubscriber},
+    __private::tracing::{self},
     writer::Json,
 };
-use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use thiserror::Error;
 pub type Result<T> = core::result::Result<T, ErrorWithContext>;
@@ -32,12 +29,13 @@ impl ErrorWithContext {
 
 #[async_trait]
 impl Writer for ErrorWithContext {
-    async fn write(mut self, req: &mut Request, depot: &mut Depot, res: &mut Response) {
+    async fn write(mut self, _req: &mut Request, _depot: &mut Depot, res: &mut Response) {
         match self.error {
             Error::Unknown
             | Error::HostNotFound
             | Error::ConnectionReset
             | Error::ConnectionRefused
+            | Error::Generic(_)
             | Error::ConnectionTimeout => res.status_code(StatusCode::INTERNAL_SERVER_ERROR),
             Error::MissingBareHeader(_)
             | Error::InvalidBareHeader(_)
@@ -87,6 +85,9 @@ pub enum Error {
     #[error("The remote didn't respond with headers/body in time.")]
     #[diagnostic(code(CONNECTION_TIMEOUT))]
     ConnectionTimeout,
+    #[error("{0}")]
+    #[diagnostic(code(UNKNOWN))]
+    Generic(String),
 }
 
 impl Error {
@@ -103,6 +104,7 @@ impl Error {
             Error::ConnectionReset => todo!(),
             Error::ConnectionRefused => todo!(),
             Error::ConnectionTimeout => todo!(),
+            Error::Generic(_) => todo!(),
         };
 
         json!({
@@ -116,9 +118,8 @@ impl Error {
 
 #[async_trait]
 impl Writer for Error {
-    async fn write(mut self, req: &mut Request, depot: &mut Depot, res: &mut Response) {
+    async fn write(mut self, _req: &mut Request, _depot: &mut Depot, res: &mut Response) {
         let report: StackReport = self.into();
-        tracing::error!("\n{}", report.code().unwrap());
         tracing::error!("\n {report:?}");
         res.render(format!("{report:?}"));
     }

@@ -1,17 +1,19 @@
+use std::{any::TypeId, collections::HashMap, ops::DerefMut, str::FromStr};
+
 use reqwest::header::HeaderMap;
+use salvo::{
+    http::{
+        header::{HeaderName, HeaderValue},
+        request::secure_max_size,
+    },
+    logging::Logger,
+    prelude::*,
+};
 
-use salvo::http::header::{HeaderName, HeaderValue};
-
-use salvo::http::request::secure_max_size;
-use salvo::logging::Logger;
-use salvo::prelude::*;
-
-use crate::util::{join_bare_headers, split_headers, ProcessedHeaders, REQWEST_CLIENT};
-use crate::version::VersionData;
-use std::any::TypeId;
-use std::collections::HashMap;
-use std::ops::DerefMut;
-use std::str::FromStr;
+use crate::{
+    util::{join_bare_headers, split_headers, ProcessedHeaders, REQWEST_CLIENT},
+    version::VersionData,
+};
 
 #[handler]
 async fn versions(res: &mut Response) {
@@ -55,7 +57,7 @@ async fn preprocess_headers(req: &mut Request, depot: &mut Depot) {
     let bare_headers = join_bare_headers(headers);
 
     // Process bare headers if they exist
-    if !bare_headers.is_empty() {
+    if let Ok(bare_headers) = bare_headers {
         // Deserialize the bare headers into a hashmap of strings
         let data: HashMap<String, String> =
             serde_json::from_str(bare_headers.to_str().expect("Should be valid string"))
@@ -84,7 +86,7 @@ async fn preprocess_headers(req: &mut Request, depot: &mut Depot) {
 
 #[handler]
 /// Handler for [`TOMPHttp V2`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md#send-and-receive-data-from-a-remote) requests.
-async fn v2_get(req: &mut Request, res: &mut Response, depot: &mut Depot) {
+pub(crate) async fn v2_get(req: &mut Request, res: &mut Response, depot: &mut Depot) {
     // Get a mutable reference to the processed headers from the depot
     let headers: &mut ProcessedHeaders = depot
         .get_mut(&format!("{:?}", TypeId::of::<ProcessedHeaders>()))

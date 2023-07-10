@@ -1,16 +1,32 @@
+use std::{
+    ops::{Deref, DerefMut},
+    str::{self, FromStr},
+};
+
 use once_cell::sync::OnceCell;
 use reqwest::Client;
 use salvo::{
     http::HeaderValue,
     hyper::{http::HeaderName, HeaderMap},
 };
-use std::{
-    ops::{Deref, DerefMut},
-    str::{self, FromStr},
-};
-use tracing_subscriber::fmt::format;
+
+use crate::error::{Error, ErrorWithContext};
 const MAX_HEADER_VALUE: usize = 3072;
 pub static REQWEST_CLIENT: OnceCell<Client> = OnceCell::new();
+
+#[derive(Default, Clone, Debug)]
+pub struct RequestData{
+    pub processed_headers: HeaderMap,
+    pub pass_headers: Option<Vec<String>>,
+    pub status: Option<Vec<String>> 
+}
+
+impl RequestData {
+    pub fn explode_ref_mut(&mut self) -> (&mut HeaderMap, Option<&mut Vec<String>>, Option<&mut Vec<String>>) {
+        (&mut self.processed_headers, self.pass_headers.as_mut(), self.status.as_mut())
+    }
+}
+
 #[derive(Default, Clone, Debug)]
 pub struct ProcessedHeaders(HeaderMap);
 
@@ -83,16 +99,16 @@ pub fn split_headers(headers: &HeaderMap) -> HeaderMap {
 ///
 /// The original case of the header names is preserved and other headers are not
 /// modified.
-pub fn join_bare_headers(headers: &HeaderMap) -> HeaderValue {
+pub fn join_bare_headers(headers: &HeaderMap) -> Result<HeaderValue, ErrorWithContext> {
     // Create an early out if `x-bare-headers` exists on its own
     if let Some(header) = headers.get("x-bare-headers") {
-        return header.to_owned();
+        return Ok(header.to_owned());
     }
     // Create a new empty string for the joined header value
     let mut joined_value = String::new();
     // Why couldn't they have used duplicate headers.
     // It'd be less ugly. Oh well.
-    let mut x = 1;
+    let mut x = 0;
     while let Some(header) = headers.get(format!("x-bare-headers-{x}")) {
         joined_value.push_str(
             header
@@ -101,9 +117,17 @@ pub fn join_bare_headers(headers: &HeaderMap) -> HeaderValue {
         );
         x += 1;
     }
+
+    // We can assume that this header was never specified..
+    if joined_value.is_empty() && x != 0 {
+        Err(ErrorWithContext::new(
+            Error::MissingBareHeader("X-BARE-HEADERS".into()),
+            "While joining headers",
+        ))?
+    }
+
     // Create a new header value from the joined value string
-    let joined_value = HeaderValue::from_str(&joined_value)
-        .expect("[Join Headers] Failed to create header value?");
+    let joined_value = HeaderValue::from_str(&joined_value).unwrap();
     // Return joined values
-    joined_value
+    Ok(joined_value)
 }
