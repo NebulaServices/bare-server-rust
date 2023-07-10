@@ -1,11 +1,11 @@
-use std::{collections::HashMap, str::FromStr, any::TypeId, ops::DerefMut};
+use std::{any::TypeId, collections::HashMap, str::FromStr};
 
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use salvo::{prelude::*, http::request::secure_max_size};
+use salvo::{http::request::secure_max_size, prelude::*};
 
 use crate::{
     error::{self, Error, ErrorWithContext},
-    util::{self, ProcessedHeaders, REQWEST_CLIENT, RequestData, split_headers},
+    util::{self, split_headers, RequestData, REQWEST_CLIENT},
 };
 
 #[handler]
@@ -15,9 +15,7 @@ pub async fn process_headers(req: &mut Request, depot: &mut Depot) -> error::Res
     let mut processed = HeaderMap::new();
     headers
         .get("X-BARE-FORWARD-HEADERS")
-        .get_or_insert(
-            &HeaderValue::from_str("").unwrap()
-        )
+        .get_or_insert(&HeaderValue::from_str("").unwrap())
         .to_str()
         .expect("Should not fail")
         .split(", ")
@@ -34,7 +32,8 @@ pub async fn process_headers(req: &mut Request, depot: &mut Depot) -> error::Res
         });
 
     let bare_header_map: HashMap<String, String> =
-        serde_json::from_str(bare_headers.to_str().expect("Should be valid string")).unwrap_or(HashMap::new());
+        serde_json::from_str(bare_headers.to_str().expect("Should be valid string"))
+            .unwrap_or(HashMap::new());
 
     // Append the hashmap entries to the processed headers
     bare_header_map.iter().for_each(|(head, value)| {
@@ -56,9 +55,9 @@ pub async fn process_headers(req: &mut Request, depot: &mut Depot) -> error::Res
     processed.remove("host");
 
     depot.inject(RequestData {
-        processed_headers: processed.into(),
+        processed_headers: processed,
         pass_headers: None,
-        status: None
+        status: None,
     });
     Ok(())
 }
@@ -70,19 +69,17 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
         .unwrap()
         .explode_ref_mut();
 
-    let url = req
-        .header::<String>("x-bare-url").unwrap_or(format!(
-            "{}//{}{}",
-            // Assume HTTPS if not specified
-            req.header::<String>("x-bare-protocol")
-                .unwrap_or("https:".to_owned()),
-            req.header::<String>("x-bare-host")
-                .unwrap_or("example.com".to_owned()),
-            req
-                .header::<String>("x-bare-path")
-                .unwrap_or("/".to_owned())
-        ));
-    
+    let url = req.header::<String>("x-bare-url").unwrap_or(format!(
+        "{}//{}{}",
+        // Assume HTTPS if not specified
+        req.header::<String>("x-bare-protocol")
+            .unwrap_or("https:".to_owned()),
+        req.header::<String>("x-bare-host")
+            .unwrap_or("example.com".to_owned()),
+        req.header::<String>("x-bare-path")
+            .unwrap_or("/".to_owned())
+    ));
+
     let response = REQWEST_CLIENT
         .get()
         .unwrap()
@@ -94,7 +91,10 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
             req.payload_with_max_size(secure_max_size())
                 .await
                 .map_err(|_| {
-                    ErrorWithContext::new(Error::Generic("invalid_body".into()), "Couldn't parse request body.")
+                    ErrorWithContext::new(
+                        Error::Generic("invalid_body".into()),
+                        "Couldn't parse request body.",
+                    )
                 })?
                 .to_vec(),
         )
@@ -109,7 +109,7 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
         .expect("This shouldn't fail, probably?");
     // Split the headers if needed
     resp.set_headers(split_headers(&resp.headers));
-    
+
     if statuses.is_some() && statuses.unwrap().contains(&response.status().to_string()) {
         resp.status_code(response.status());
     }
@@ -117,7 +117,8 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
     if pass_headers.is_some() {
         pass_headers.unwrap().iter().for_each(|header| {
             if let Some(value) = response.headers().get(header) {
-                resp.headers.append(HeaderName::from_str(header).unwrap(), value.clone());
+                resp.headers
+                    .append(HeaderName::from_str(header).unwrap(), value.clone());
             }
         });
     }
@@ -131,9 +132,13 @@ pub async fn fetch(req: &mut Request, depot: &mut Depot, resp: &mut Response) ->
 
     resp.add_header(
         "x-bare-status-text",
-        response.status().canonical_reason().expect("canonical_reason should always exist."),
+        response
+            .status()
+            .canonical_reason()
+            .expect("canonical_reason should always exist."),
         true,
-    ).expect("Should never fail to add `x-bare-status-text`");
+    )
+    .expect("Should never fail to add `x-bare-status-text`");
 
     add_cors_headers(resp);
 

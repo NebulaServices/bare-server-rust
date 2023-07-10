@@ -15,15 +15,25 @@ const MAX_HEADER_VALUE: usize = 3072;
 pub static REQWEST_CLIENT: OnceCell<Client> = OnceCell::new();
 
 #[derive(Default, Clone, Debug)]
-pub struct RequestData{
+pub struct RequestData {
     pub processed_headers: HeaderMap,
     pub pass_headers: Option<Vec<String>>,
-    pub status: Option<Vec<String>> 
+    pub status: Option<Vec<String>>,
 }
 
 impl RequestData {
-    pub fn explode_ref_mut(&mut self) -> (&mut HeaderMap, Option<&mut Vec<String>>, Option<&mut Vec<String>>) {
-        (&mut self.processed_headers, self.pass_headers.as_mut(), self.status.as_mut())
+    pub fn explode_ref_mut(
+        &mut self,
+    ) -> (
+        &mut HeaderMap,
+        Option<&mut Vec<String>>,
+        Option<&mut Vec<String>>,
+    ) {
+        (
+            &mut self.processed_headers,
+            self.pass_headers.as_mut(),
+            self.status.as_mut(),
+        )
     }
 }
 

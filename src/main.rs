@@ -1,6 +1,6 @@
 use error::{Error, ErrorWithContext};
 use reqwest::Client;
-use salvo::{prelude::*, __private::tracing};
+use salvo::{__private::tracing, prelude::*};
 use util::REQWEST_CLIENT;
 use v3::add_cors_headers_route;
 //use util::REQWEST_CLIENT;
@@ -8,7 +8,6 @@ use version::VersionData;
 mod v3;
 
 pub mod error;
-pub mod routes;
 pub mod util;
 pub mod version;
 
@@ -37,8 +36,16 @@ async fn main() {
         //.hoop(Logger::new())
         .hoop(add_cors_headers_route)
         .get(versions)
-        .push(Router::with_path("v2").hoop(crate::v3::process_headers).handle(crate::v3::fetch))
-        .push(Router::with_path("v3").hoop(crate::v3::process_headers).handle(crate::v3::fetch))
+        .push(
+            Router::with_path("v2")
+                .hoop(crate::v3::process_headers)
+                .handle(crate::v3::fetch),
+        )
+        .push(
+            Router::with_path("v3")
+                .hoop(crate::v3::process_headers)
+                .handle(crate::v3::fetch),
+        )
         .push(Router::with_path("error").get(error_test));
     let server = TcpListener::new("127.0.0.1:5800").bind().await;
     Server::new(server).serve(app).await;
