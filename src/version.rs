@@ -23,9 +23,16 @@ pub struct VersionData {
 // Implement the Default trait for VersionData to provide a default value
 impl Default for VersionData {
     fn default() -> Self {
+        let mut versions = Vec::new();
+        versions.push("v3".into());
+        cfg_if! {
+            if #[cfg(feature = "v2")] {
+                versions.push("v2".into());
+            }
+        }
         Self {
-            // Currently the project supports only version 2 of the [`TOMPHTTP`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md) specification
-            versions: vec!["v2".into()],
+            // Currently the project supports only version 3 of the [`TOMPHTTP`](https://github.com/tomphttp/specifications/blob/master/BareServerV2.md) specification
+            versions,
             // The project is written in Rust
             language: "Rust".into(),
             // Use the default value for MaintainerData
@@ -76,8 +83,9 @@ pub struct ProjectData {
 impl Default for ProjectData {
     fn default() -> Self {
         Self {
-            name: "Nebula TOMPHTTP Server".into(),
-            description: "Clean implementation of the TOMPHttp Specification in Rust.".into(),
+            name: "tomphttp-rs server".into(),
+            description:
+                "Clean implementation of the tomphttp specificiation in the Rust language.".into(),
             email: "".into(),
             website: "https://github.com/NebulaServices/bare-server-rust".into(),
             repository: "https://github.com/NebulaServices/bare-server-rust".into(),

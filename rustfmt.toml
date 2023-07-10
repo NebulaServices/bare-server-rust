@@ -1,4 +1,7 @@
 # NOTE: Wrapping comments required the nightly toolchain
 # A saddening amount of rustfmt features are locked on nightly
 # despite being more or less stable.
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+use_field_init_shorthand = true
 wrap_comments = true
